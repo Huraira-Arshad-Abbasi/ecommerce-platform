@@ -2,7 +2,7 @@
 
 **Purpose:** This document explains how this project is being built, step by step. It is written for students and junior developers who want to understand not just *what* was built, but *why* and *how*.
 
-**Last Updated:** Phase 7 — Admin Dashboard Shell
+**Last Updated:** Phase 8 — Admin Product Management
 
 ---
 
@@ -641,14 +641,81 @@ Authorization is not just about hiding buttons. A user who knows the URL can nav
 
 ---
 
+## Phase 8 — Admin Product Management
+
+### What Was Built
+
+Full CRUD for products: list with search/pagination, create form with image upload, edit form, and delete with confirmation.
+
+### Admin Product API Routes
+
+**`GET /api/admin/products`** — List all products (including inactive):
+- Supports search, category filter, and pagination
+- Populates category and supplier names
+- Requires admin role
+
+**`POST /api/admin/products`** — Create a product:
+- Validates required fields (name, slug, description, price, category, supplier)
+- Checks slug uniqueness
+- Stores images as Cloudinary URLs
+
+**`GET /api/admin/products/[id]`** — Get a single product (for edit form)
+
+**`PUT /api/admin/products/[id]`** — Update a product:
+- Checks slug uniqueness if slug is being changed
+- Uses `findByIdAndUpdate` with validators
+
+**`DELETE /api/admin/products/[id]`** — Delete a product:
+- Permanent deletion (not soft delete)
+- Confirmed by user before executing
+
+### Image Upload (`POST /api/admin/upload`)
+
+Uploads images to Cloudinary using streaming:
+
+```ts
+const stream = cloudinary.uploader.upload_stream(
+  { folder: "local-commerce", resource_type: "image" },
+  (error, result) => { ... }
+);
+stream.end(buffer);
+```
+
+The file is read from a `FormData` request, converted to a Buffer, and streamed to Cloudinary. The returned `secure_url` is stored in the product's `images` array.
+
+### Product Form Component (`components/admin/product-form.tsx`)
+
+A shared component used by both create and edit pages:
+
+- **Auto-generates slug** from product name
+- **Loads categories and suppliers** from API on mount
+- **Image upload** with preview and remove capability
+- **Category/supplier selection** via dropdowns
+- **Stock management** with numeric input
+- **Active toggle** to show/hide product in store
+
+The form adapts its behavior based on the `mode` prop (`"create"` or `"edit"`).
+
+### Products List Page
+
+- Table view with columns: Product, Category, Supplier, Price, Stock, Status, Actions
+- Search input filters by name/description
+- Pagination with Previous/Next buttons
+- Delete button with confirmation dialog
+- Edit link navigates to the product form
+
+### Lesson
+
+Image upload is one of the few features that requires a different approach on client and server. The client reads the file and sends it as `FormData`. The server receives the `FormData`, extracts the file buffer, and streams it to a third-party service (Cloudinary). This separation keeps the upload logic clean and testable.
+
+---
+
 ## What's Next
 
-**Phase 8 — Admin Product Management** will add:
-- Products list page with table view
-- Create/edit product forms with image upload
-- Delete product with confirmation
-- Category and supplier selection
-- Stock management
+**Phase 9 — Admin Supplier & Category Management** will add:
+- Supplier CRUD (list, create, edit, activate/deactivate)
+- Category CRUD (list, create, edit, delete)
+- Both with admin-only API routes
 
 ---
 
