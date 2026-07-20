@@ -1,5 +1,9 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import { config } from "dotenv";
+import { resolve } from "path";
+
+config({ path: resolve(__dirname, "../.env.local") });
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 

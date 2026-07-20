@@ -2,7 +2,7 @@
 
 **Purpose:** This document explains how this project is being built, step by step. It is written for students and junior developers who want to understand not just *what* was built, but *why* and *how*.
 
-**Last Updated:** Phase 9 — Admin Supplier & Category Management
+**Last Updated:** Phase 10 — Admin Order & Customer Management
 
 ---
 
@@ -764,12 +764,78 @@ Consistency in code structure pays off. When every feature follows the same patt
 
 ---
 
+## Phase 10 — Admin Order & Customer Management
+
+### What Was Built
+
+Admin can now manage orders (view all, update status) and view customers (list, detail, order history).
+
+### Admin Order Management
+
+**`GET /api/admin/orders`** — List all orders:
+- Supports status filter (`?status=pending`)
+- Paginated with 20 orders per page
+- Populates customer name/email and product names/images
+
+**`GET /api/admin/orders/[id]`** — Single order detail with customer and product info
+
+**`PUT /api/admin/orders/[id]`** — Update order status:
+- Validates status against allowed values: `pending`, `confirmed`, `shipped`, `delivered`, `cancelled`
+- Returns the updated order with populated fields
+
+**Orders List Page** — Table view with:
+- Status filter buttons (All, Pending, Confirmed, Shipped, Delivered, Cancelled)
+- Order ID, customer name/email, date, total, status badge, payment method
+- Link to order detail page
+
+**Order Detail Page** — Full order management:
+- Status update buttons (click to change status with confirmation)
+- Items list with images, quantities, prices
+- Order summary, customer info, and shipping address in a 3-column grid
+
+### Admin Customer Management
+
+**`GET /api/admin/customers`** — List all customers:
+- Returns only users with `role: "customer"`
+- Aggregates order count and total spent per customer using MongoDB aggregation
+
+**`GET /api/admin/customers/[id]`** — Customer detail:
+- Returns customer info, all their orders, order count, and total spent
+
+**Customers List Page** — Table view with:
+- Customer name, email, join date, order count, total spent
+- Link to customer detail page
+
+**Customer Detail Page** — Customer profile:
+- Stats cards (total orders, total spent, join date)
+- Full order history with status badges, linking to admin order detail
+
+### MongoDB Aggregation
+
+The customer list uses `aggregate()` instead of multiple queries:
+
+```ts
+const orderCounts = await Order.aggregate([
+  { $match: { customer: { $in: customerIds } } },
+  { $group: { _id: "$customer", count: { $sum: 1 }, totalSpent: { $sum: "$totalAmount" } } },
+]);
+```
+
+This runs a single database query to get order counts and totals for all customers on the page, instead of N+1 individual queries. Aggregation pipelines are more efficient for summary data.
+
+### Lesson
+
+As the admin panel grows, the same patterns repeat: API route, list page, detail page. The real learning is in the data — aggregation pipelines for summaries, population for related data, and filtering for usability. These are the skills that transfer to any backend framework.
+
+---
+
 ## What's Next
 
-**Phase 10 — Admin Order & Customer Management** will add:
-- Orders list with status filter and status updates
-- Order detail view for admin
-- Customers list and customer details
+**Phase 11 — Polish & Analytics** will add:
+- Dashboard analytics (orders per day, revenue summary, top products)
+- Responsive design pass
+- Error handling and loading states
+- Final testing
 
 ---
 
