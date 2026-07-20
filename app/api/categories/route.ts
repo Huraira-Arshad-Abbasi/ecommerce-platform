@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/db";
+import Category from "@/models/Category";
 
 export async function GET() {
-  return NextResponse.json({ message: "List categories" });
-}
+  await connectToDatabase();
 
-export async function POST() {
-  return NextResponse.json({ message: "Create category" });
+  const categories = await Category.find({ isActive: true })
+    .sort({ name: 1 })
+    .lean();
+
+  return NextResponse.json(categories);
 }

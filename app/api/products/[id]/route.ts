@@ -1,13 +1,26 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/db";
+import Product from "@/models/Product";
 
-export async function GET() {
-  return NextResponse.json({ message: "Get product" });
-}
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  await connectToDatabase();
 
-export async function PUT() {
-  return NextResponse.json({ message: "Update product" });
-}
+  const { id } = await params;
 
-export async function DELETE() {
-  return NextResponse.json({ message: "Delete product" });
+  const product = await Product.findById(id)
+    .populate("category", "name slug")
+    .populate("supplier", "name")
+    .lean();
+
+  if (!product) {
+    return NextResponse.json(
+      { error: "Product not found" },
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json(product);
 }
