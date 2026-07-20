@@ -2,7 +2,7 @@
 
 **Purpose:** This document explains how this project is being built, step by step. It is written for students and junior developers who want to understand not just *what* was built, but *why* and *how*.
 
-**Last Updated:** Phase 8 — Admin Product Management
+**Last Updated:** Phase 9 — Admin Supplier & Category Management
 
 ---
 
@@ -710,12 +710,66 @@ Image upload is one of the few features that requires a different approach on cl
 
 ---
 
+## Phase 9 — Admin Supplier & Category Management
+
+### What Was Built
+
+Full CRUD for suppliers and categories, mirroring the pattern established in Phase 8 for products.
+
+### Admin Category API Routes
+
+**`GET /api/admin/categories`** — List all categories with pagination (sorted by name)
+
+**`POST /api/admin/categories`** — Create a category:
+- Requires name and slug
+- Checks slug uniqueness
+- Supports optional description, image URL, and isActive toggle
+
+**`GET /api/admin/categories/[id]`** — Get a single category (for edit form)
+
+**`PUT /api/admin/categories/[id]`** — Update a category (with slug uniqueness check)
+
+**`DELETE /api/admin/categories/[id]`** — Delete a category permanently
+
+### Admin Supplier API Routes
+
+Same pattern as categories but simpler (no slug field):
+
+**`GET /api/admin/suppliers`** — List all suppliers with pagination
+
+**`POST /api/admin/suppliers`** — Create a supplier (name required, other fields optional)
+
+**`GET /api/admin/suppliers/[id]`** — Get a single supplier
+
+**`PUT /api/admin/suppliers/[id]`** — Update a supplier
+
+**`DELETE /api/admin/suppliers/[id]`** — Delete a supplier permanently
+
+### Reusable Pattern
+
+By Phase 9, a clear pattern emerged for admin CRUD features:
+
+1. **API route** — `app/api/admin/{resource}/route.ts` (GET list + POST create)
+2. **API route by ID** — `app/api/admin/{resource}/[id]/route.ts` (GET + PUT + DELETE)
+3. **List page** — Table view with pagination, status badges, edit/delete actions
+4. **Create page** — Form component with `mode="create"`
+5. **Edit page** — Fetches data, passes to form with `mode="edit"`
+6. **Form component** — `components/admin/{resource}-form.tsx` (shared between create/edit)
+
+This pattern repeats for every admin resource. Once you build one, you can build the rest quickly.
+
+### Lesson
+
+Consistency in code structure pays off. When every feature follows the same pattern, developers can navigate the codebase without learning new conventions for each section. New team members can understand the entire admin panel after learning one feature.
+
+---
+
 ## What's Next
 
-**Phase 9 — Admin Supplier & Category Management** will add:
-- Supplier CRUD (list, create, edit, activate/deactivate)
-- Category CRUD (list, create, edit, delete)
-- Both with admin-only API routes
+**Phase 10 — Admin Order & Customer Management** will add:
+- Orders list with status filter and status updates
+- Order detail view for admin
+- Customers list and customer details
 
 ---
 
