@@ -23,5 +23,8 @@ const SupplierSchema = new Schema<ISupplier>(
   { timestamps: true }
 );
 
+SupplierSchema.index({ name: "text" });
+SupplierSchema.index({ isActive: 1 });
+
 export default mongoose.models.Supplier ||
   mongoose.model<ISupplier>("Supplier", SupplierSchema);

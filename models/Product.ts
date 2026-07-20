@@ -31,5 +31,12 @@ const ProductSchema = new Schema<IProduct>(
   { timestamps: true }
 );
 
+ProductSchema.index({ name: "text", description: "text" });
+ProductSchema.index({ category: 1 });
+ProductSchema.index({ supplier: 1 });
+ProductSchema.index({ isActive: 1 });
+ProductSchema.index({ price: 1 });
+ProductSchema.index({ createdAt: -1 });
+
 export default mongoose.models.Product ||
   mongoose.model<IProduct>("Product", ProductSchema);

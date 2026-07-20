@@ -21,5 +21,9 @@ const CategorySchema = new Schema<ICategory>(
   { timestamps: true }
 );
 
+CategorySchema.index({ name: "text" });
+CategorySchema.index({ slug: 1 });
+CategorySchema.index({ isActive: 1 });
+
 export default mongoose.models.Category ||
   mongoose.model<ICategory>("Category", CategorySchema);
