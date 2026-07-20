@@ -48,6 +48,12 @@ export function ShopNav({ user }: ShopNavProps) {
                   </span>
                 )}
               </Link>
+              <Link
+                href="/orders"
+                className={`text-sm hover:underline ${pathname === "/orders" ? "font-medium" : ""}`}
+              >
+                Orders
+              </Link>
               {user.role === "admin" && (
                 <Link href="/admin/dashboard" className="text-sm hover:underline">
                   Admin

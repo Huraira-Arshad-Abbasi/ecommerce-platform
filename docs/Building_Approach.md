@@ -2,7 +2,7 @@
 
 **Purpose:** This document explains how this project is being built, step by step. It is written for students and junior developers who want to understand not just *what* was built, but *why* and *how*.
 
-**Last Updated:** Phase 3 — Authentication
+**Last Updated:** Phase 6 — Checkout & Orders
 
 ---
 
@@ -415,12 +415,181 @@ We do not build multiple features simultaneously. We finish one, test it, commit
 
 ---
 
+## Phase 4 — Product Browsing
+
+### What Was Built
+
+Three pages that let customers discover and view products, plus an API layer with filtering, search, and pagination.
+
+### API Routes
+
+The product API (`app/api/products/route.ts`) supports:
+- **Category filtering** — `?category=slug`
+- **Price range** — `?minPrice=500&maxPrice=5000`
+- **Text search** — `?search=keyword` (uses MongoDB text index)
+- **Sorting** — `?sort=price-asc`, `price-desc`, `name-asc`, `newest`
+- **Pagination** — `?page=1&limit=12` (returns `total`, `page`, `pages`)
+
+A separate `app/api/products/[id]/route.ts` handles fetching a single product.
+
+### Pages
+
+**Homepage** (`app/(shop)/page.tsx`)
+- Server component that fetches featured products and categories
+- Hero section, featured products grid, category cards
+- Calls the internal API using `fetch()` with `next: { revalidate: 3600 }` for ISR
+
+**Product Listing** (`app/(shop)/products/page.tsx`)
+- Client component with URL search params for filters
+- `useRouter` + `useSearchParams` to sync filter state with URL
+- Sidebar filters (categories, price range), search bar, sort dropdown
+- `ProductCard` component for consistent product display
+
+**Product Detail** (`app/(shop)/product/[id]/page.tsx`)
+- Server component with `generateMetadata` for SEO
+- Product images, price, description, stock status
+- `AddToCart` client component handles cart interaction
+
+### Lesson
+
+The homepage uses **Incremental Static Regeneration** (ISR) — `revalidate: 3600` means the page is generated at build time and re-generated at most once per hour. This gives the performance of static pages with the freshness of dynamic ones. The product listing page is fully dynamic because filters change constantly.
+
+---
+
+## Phase 5 — Shopping Cart
+
+### What Was Built
+
+A client-side shopping cart using Zustand with localStorage persistence.
+
+### Why Zustand Over Context API
+
+React Context re-renders every consumer when any part of the state changes. Zustand solves this with selective subscriptions:
+
+```tsx
+// Only re-renders when items change, not when other state changes
+const items = useCartStore((state) => state.items);
+
+// Only re-renders when total changes
+const total = useCartStore((state) => state.getTotal());
+```
+
+### Cart Architecture
+
+The cart is entirely client-side. There is no server-side cart, no cart API, and no cart model. Why?
+
+1. **Anonymous users** need a cart before they log in.
+2. **Performance** — no server round-trips for adding/removing items.
+3. **Simplicity** — localStorage is sufficient for MVP.
+4. **Merging** — on login, we can optionally merge the localStorage cart with a server-side cart (future phase).
+
+### Cart Store (`lib/cart.ts`)
+
+```ts
+interface CartState {
+  items: CartItem[];
+  addItem(item)          // Adds item or increments quantity (capped at stock)
+  removeItem(id)         // Removes item entirely
+  updateQuantity(id, n)  // Sets quantity (capped at stock)
+  clearCart()            // Empties the cart
+  getTotal()             // Sum of price * quantity
+  getItemCount()         // Sum of quantities
+}
+```
+
+Persisted to `localStorage` under the key `"cart-storage"` via Zustand's `persist` middleware.
+
+### AddToCart Component (`components/shop/add-to-cart.tsx`)
+
+- Reads URL search params to detect `?added=1` (post-redirect feedback)
+- Shows quantity selector and "Added to Cart" confirmation
+- Validates that user is logged in before allowing add
+
+### Cart Page (`app/(shop)/cart/page.tsx`)
+
+- Displays all items with images, quantity controls, and remove buttons
+- Order summary sidebar with subtotal and checkout link
+- Empty state with link to browse products
+
+### Lesson
+
+Client-side state management is not "worse" than server-side. It is a different tool for a different problem. The cart is a temporary, user-specific, frequently-changing piece of state — perfect for client-side storage. Making it server-side would add complexity without meaningful benefit.
+
+---
+
+## Phase 6 — Checkout & Orders
+
+### What Was Built
+
+The checkout flow: shipping form → order creation → order history → order detail.
+
+### Checkout Page (`app/(shop)/checkout/page.tsx`)
+
+A client component that:
+1. Reads cart items from Zustand
+2. Shows an order summary (items, quantities, prices, total)
+3. Presents a shipping address form (name, phone, address, city, postal code)
+4. On submit, sends `POST /api/orders` with cart items and address
+5. On success, clears the cart and redirects to the order detail page
+
+### Order API Routes
+
+**`POST /api/orders`** — Create an order:
+1. Requires authentication (checks JWT session)
+2. Validates that all products exist and have sufficient stock
+3. Calculates total from actual product prices (never trust client-side prices)
+4. Creates the order document in MongoDB
+5. Decrements stock for each product
+6. Returns the created order
+
+**`GET /api/orders`** — List customer's orders:
+- Returns orders sorted by newest first
+- Populates product names and images for display
+- Only returns orders belonging to the current user
+
+**`GET /api/orders/[id]`** — Single order detail:
+- Returns one order with full item details
+- Verifies the order belongs to the current user
+
+### Order Pages
+
+**Order History** (`app/(shop)/orders/page.tsx`)
+- Fetches all orders for the current user
+- Displays order ID, date, item count, total, and status badge
+- Links to order detail page
+
+**Order Detail** (`app/(shop)/orders/[id]/page.tsx`)
+- Shows full order information: items, prices, quantities
+- Shipping address
+- Order summary with total
+- Status badge with color coding
+
+### Security Pattern: Price Verification
+
+The checkout never trusts the prices sent by the client:
+
+```ts
+// Client sends: { product: "abc", quantity: 2 }
+// Server fetches the actual product: { price: 1500 }
+// Server uses product.price, NOT client-sent price
+```
+
+This prevents tampering — a user cannot change the price in the browser and pay less.
+
+### Lesson
+
+The checkout flow is the most security-sensitive part of an e-commerce application. Every piece of data from the client is untrusted. Product prices, stock levels, and user identity must all be verified server-side. The server is the single source of truth.
+
+---
+
 ## What's Next
 
-**Phase 4 — Product Browsing** will add:
-- Homepage with featured products and category navigation
-- Product listing page with search, filters, and pagination
-- Product detail page with images and add-to-cart button
+**Phase 7 — Admin Dashboard Shell** will add:
+- Admin layout with sidebar navigation
+- Dashboard overview page with statistics
+- Product management (CRUD)
+- Category management
+- Order management with status updates
 
 ---
 
