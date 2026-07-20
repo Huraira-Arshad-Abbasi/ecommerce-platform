@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { logout } from "@/app/actions/auth";
+import { useCartStore } from "@/lib/cart";
 
 interface ShopNavProps {
   user?: {
@@ -13,6 +15,12 @@ interface ShopNavProps {
 
 export function ShopNav({ user }: ShopNavProps) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+  const itemCount = useCartStore((state) => state.getItemCount());
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <header className="border-b">
@@ -34,6 +42,11 @@ export function ShopNav({ user }: ShopNavProps) {
                 className={`text-sm hover:underline ${pathname === "/cart" ? "font-medium" : ""}`}
               >
                 Cart
+                {mounted && itemCount > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium h-5 min-w-5 px-1">
+                    {itemCount}
+                  </span>
+                )}
               </Link>
               {user.role === "admin" && (
                 <Link href="/admin/dashboard" className="text-sm hover:underline">

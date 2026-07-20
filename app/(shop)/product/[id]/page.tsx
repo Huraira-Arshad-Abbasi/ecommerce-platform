@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { connectToDatabase } from "@/lib/db";
 import Product from "@/models/Product";
+import { AddToCart } from "@/components/shop/add-to-cart";
 
 export default async function ProductDetailPage({
   params,
@@ -117,12 +118,14 @@ export default async function ProductDetailPage({
             </div>
           </div>
 
-          <button
+          <AddToCart
+            productId={product._id.toString()}
+            name={product.name}
+            price={product.price}
+            image={product.images[0] || ""}
+            stock={product.stock}
             disabled={product.stock === 0}
-            className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-          >
-            {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-          </button>
+          />
         </div>
       </div>
     </div>
