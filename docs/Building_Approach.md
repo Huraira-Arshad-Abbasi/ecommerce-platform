@@ -2,7 +2,7 @@
 
 **Purpose:** This document explains how this project is being built, step by step. It is written for students and junior developers who want to understand not just *what* was built, but *why* and *how*.
 
-**Last Updated:** Phase 10 — Admin Order & Customer Management
+**Last Updated:** Phase 11 — Polish & Analytics (MVP Complete)
 
 ---
 
@@ -829,13 +829,89 @@ As the admin panel grows, the same patterns repeat: API route, list page, detail
 
 ---
 
-## What's Next
+## Phase 11 — Polish & Analytics
 
-**Phase 11 — Polish & Analytics** will add:
-- Dashboard analytics (orders per day, revenue summary, top products)
-- Responsive design pass
-- Error handling and loading states
-- Final testing
+### What Was Built
+
+Final polish pass: enhanced dashboard analytics, mobile navigation, and responsive fixes across the platform.
+
+### Dashboard Analytics
+
+The stats API (`app/api/admin/stats/route.ts`) now returns rich analytics using MongoDB aggregation pipelines:
+
+**Orders per day (last 7 days):**
+```ts
+Order.aggregate([
+  { $match: { createdAt: { $gte: last7Days } } },
+  { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } },
+  { $sort: { _id: 1 } },
+])
+```
+
+**Top selling products:** Unwinds order items, groups by product, counts quantity sold and revenue, joins with product names.
+
+**Top categories:** Same approach but groups by category through the product reference chain.
+
+**Revenue trends (last 30 days):** Groups non-cancelled orders by day and sums `totalAmount`.
+
+The dashboard page visualizes this with:
+- 5 stat cards (Revenue, Orders, Pending Orders, Products, Customers)
+- Bar chart for orders per day (last 7 days)
+- Horizontal bar chart for revenue (last 30 days)
+- Recent orders table
+- Top products list with rank numbers
+- Top categories row
+
+### Mobile Navigation
+
+The shop nav (`components/shared/shop-nav.tsx`) now has a hamburger menu for mobile:
+
+- **Desktop (md+):** All links shown in a horizontal row (unchanged)
+- **Mobile (<md):** Hamburger button toggles a dropdown menu
+- Menu auto-closes on route change
+- SVG icons for open/close states (no icon library needed)
+
+Pattern used:
+```tsx
+{/* Desktop */}
+<div className="hidden md:flex items-center gap-4">...</div>
+
+{/* Mobile Toggle */}
+<button className="md:hidden">Hamburger</button>
+
+{/* Mobile Menu */}
+{mobileOpen && <div className="md:hidden">...</div>}
+```
+
+### Responsive Fixes
+
+- **Checkout:** City/postal code grid changed from `grid-cols-2` to `grid-cols-1 sm:grid-cols-2` — stacks on smallest phones
+- **All pages:** Loading skeletons, empty states, and error states were already in place from earlier phases
+
+### What Makes an MVP "Launch-Ready"
+
+1. **Works on mobile** — navigation, forms, tables all functional on small screens
+2. **Shows useful data** — dashboard gives admins actionable insights
+3. **Handles errors gracefully** — loading states, empty states, error messages
+4. **No console errors** — clean build, no TypeScript warnings
+5. **Secure** — role-based access, server-side validation, httpOnly cookies
+
+---
+
+## MVP Complete
+
+All 11 phases are done. The platform has:
+- **Customer flow:** Browse → Add to Cart → Checkout → Order History
+- **Admin flow:** Dashboard → Manage Products/Categories/Suppliers → Process Orders → View Customers
+- **Infrastructure:** JWT auth, MongoDB, Cloudinary, role-based access control
+
+### What's Next (Post-MVP)
+
+1. Deploy to Vercel
+2. Add a real payment gateway (Stripe, etc.)
+3. Email notifications for order status changes
+4. Product reviews and ratings
+5. Search optimization and filters
 
 ---
 
