@@ -2,7 +2,7 @@
 
 **Purpose:** This document explains how this project is being built, step by step. It is written for students and junior developers who want to understand not just *what* was built, but *why* and *how*.
 
-**Last Updated:** Phase 6 — Checkout & Orders
+**Last Updated:** Phase 7 — Admin Dashboard Shell
 
 ---
 
@@ -582,14 +582,73 @@ The checkout flow is the most security-sensitive part of an e-commerce applicati
 
 ---
 
+## Phase 7 — Admin Dashboard Shell
+
+### What Was Built
+
+An admin panel with role-based access control, sidebar navigation, and a dashboard with real-time statistics.
+
+### Admin Route Protection
+
+The `proxy.ts` now checks two things for admin routes:
+1. **Authentication** — Is the user logged in? (JWT cookie exists)
+2. **Authorization** — Is the user an admin? (`role === "admin"`)
+
+```ts
+// proxy.ts
+if (isAdminRoute && !payload) {
+  return NextResponse.redirect(new URL("/login", request.nextUrl));
+}
+if (isAdminRoute && payload && payload.role !== "admin") {
+  return NextResponse.redirect(new URL("/", request.nextUrl));
+}
+```
+
+This is **defense in depth** — even if someone tries to access `/admin/dashboard` directly, the proxy blocks them before the page loads. The API routes also verify the admin role independently.
+
+### Admin Layout (`app/(admin)/layout.tsx`)
+
+The admin layout uses a dedicated `AdminSidebar` component with:
+- Active state highlighting (current page gets a colored background)
+- Links to all admin sections (Dashboard, Products, Categories, Suppliers, Orders, Customers)
+- "Back to Store" link and Logout button
+- Responsive design with a fixed-width sidebar
+
+### Dashboard Stats API (`app/api/admin/stats/route.ts`)
+
+Returns four metrics:
+- **Total Orders** — `Order.countDocuments()`
+- **Total Products** — `Product.countDocuments()`
+- **Total Customers** — `User.countDocuments({ role: "customer" })`
+- **Total Revenue** — MongoDB aggregation pipeline summing `totalAmount` for non-cancelled orders
+- **Recent Orders** — Last 5 orders with customer names
+
+All queries run in parallel with `Promise.all()` for performance.
+
+### Admin Seed Script (`scripts/seed-admin.ts`)
+
+Admin accounts are not created through public registration. The seed script:
+1. Connects to MongoDB
+2. Checks if admin already exists (by email)
+3. If not, creates one with a hashed password
+4. Run via: `npm run seed admin`
+
+Default credentials: `admin@localcommerce.com` / `admin123`
+
+### Lesson
+
+Authorization is not just about hiding buttons. A user who knows the URL can navigate directly to any page. The real protection happens on the server — in the proxy (for pages) and in API routes (for data). Never rely solely on the UI to enforce access control.
+
+---
+
 ## What's Next
 
-**Phase 7 — Admin Dashboard Shell** will add:
-- Admin layout with sidebar navigation
-- Dashboard overview page with statistics
-- Product management (CRUD)
-- Category management
-- Order management with status updates
+**Phase 8 — Admin Product Management** will add:
+- Products list page with table view
+- Create/edit product forms with image upload
+- Delete product with confirmation
+- Category and supplier selection
+- Stock management
 
 ---
 
